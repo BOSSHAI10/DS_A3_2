@@ -1,0 +1,20 @@
+api:
+  dashboard: true # Opțional, pentru a vedea dashboard-ul
+  insecure: true
+
+entryPoints:
+  web:
+    address: ":80"
+    http:
+      redirections:
+        entryPoint:
+          to: websecure
+          scheme: https
+  websecure:
+    address: ":443"
+
+providers:
+  docker:
+    exposedByDefault: false # Nu expune toate containerele automat, doar cele cu label
+  file:
+    filename: /etc/traefik/dynamic.yml # Citim configurația dinamică pentru certificate

@@ -1,0 +1,11 @@
+tls:
+  certificates:
+    - certFile: /etc/traefik/certs/cert.pem  # Asigură-te că numele fișierului corespunde cu ce ai tu
+      keyFile: /etc/traefik/certs/key.pem    # Asigură-te că numele fișierului corespunde cu ce ai tu
+      stores:
+        - default
+  stores:
+    default:
+      defaultCertificate:
+        certFile: /etc/traefik/certs/cert.pem
+        keyFile: /etc/traefik/certs/key.pem

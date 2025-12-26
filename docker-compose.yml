@@ -12,15 +12,28 @@ services:
       # AM SCOS linia cu tcp://... și exposedbydefault
       - "--providers.docker.exposedbydefault=false"
       - "--entrypoints.web.address=:80"
+      # Redirecționare automată HTTP -> HTTPS
+      - "--entrypoints.web.http.redirections.entryPoint.to=websecure"
+      - "--entrypoints.web.http.redirections.entryPoint.scheme=https"
+      - "--entrypoints.websecure.address=:443"
+      # Încărcare configurare dinamică (pentru certificate)
+      - "--providers.file.filename=/etc/traefik/dynamic.yml"
     ports:
       - "80:80"
+      - "443:443"
       - "8080:8080"
     # AM SCOS extra_hosts
 
     # --- LINIA MAGICĂ ---
     # Asta îi dă voie lui Traefik să "vadă" ce containere rulează
+
+    # volumes:
+    #  - /var/run/docker.sock:/var/run/docker.sock
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
+      - ./traefik/traefik.yml:/etc/traefik/traefik.yml # Montăm config-ul static
+      - ./traefik/dynamic:/etc/traefik/dynamic # Montăm config-ul dinamic
+      - ./traefik/certs:/etc/traefik/certs # Montăm folderul cu certificate
 
     networks:
       - demo_net
@@ -38,6 +51,7 @@ services:
       - CHOKIDAR_USEPOLLING=true
       - WATCHPACK_POLLING=true
       - NODE_OPTIONS=--max-old-space-size=4096
+      - VITE_API_URL=https://localhost/api
     networks:
       - demo_net
     depends_on:
@@ -48,7 +62,8 @@ services:
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.frontend.rule=PathPrefix(`/`)"
-      - "traefik.http.routers.frontend.entrypoints=web"
+      - "traefik.http.routers.frontend.rule=Host(`localhost`)"
+      - "traefik.http.routers.frontend.entrypoints=websecure"
       - "traefik.http.services.frontend.loadbalancer.server.port=5173"
       - "traefik.http.routers.frontend.priority=10"
 
@@ -75,7 +90,8 @@ services:
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.gateway.rule=PathPrefix(`/auth`) || PathPrefix(`/users`) || PathPrefix(`/devices`) || PathPrefix(`/api`) || PathPrefix(`/people`)"
-      - "traefik.http.routers.gateway.entrypoints=web"
+      - "traefik.http.routers.gateway.entrypoints=websecure"
+      - "traefik.http.routers.backend.tls=true"
       - "traefik.http.services.gateway.loadbalancer.server.port=8084"
       - "traefik.http.routers.gateway.priority=20"
 
@@ -265,8 +281,9 @@ services:
         condition: service_healthy
     labels:
       - "traefik.enable=true"
-      - "traefik.http.routers.monitoring.rule=PathPrefix(`/monitoring`)"
-      - "traefik.http.routers.monitoring.entrypoints=web"
+      - "traefik.http.routers.monitoring.rule=Host(`localhost`) && PathPrefix(`/monitoring`)"
+      - "traefik.http.routers.monitoring.entrypoints=websecure"
+      - "traefik.http.routers.monitoring.tls=true"
       - "traefik.http.services.monitoring.loadbalancer.server.port=8085"
 
   # --- BAZA DE DATE MONITORIZARE ---

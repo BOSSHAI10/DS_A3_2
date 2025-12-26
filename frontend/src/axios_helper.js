@@ -1,7 +1,7 @@
 import axios from 'axios';
 
 // Configurare de bază Axios
-axios.defaults.baseURL = 'http://localhost';
+axios.defaults.baseURL = 'https://localhost';
 //axios.defaults.baseURL = 'http://localhost:8084';
 axios.defaults.headers.post['Content-Type'] = 'application/json';
 
