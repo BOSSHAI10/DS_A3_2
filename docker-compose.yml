@@ -32,7 +32,7 @@ services:
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
       - ./traefik/traefik.yml:/etc/traefik/traefik.yml # Montăm config-ul static
-      - ./traefik/dynamic:/etc/traefik/dynamic # Montăm config-ul dinamic
+      - ./traefik/dynamic/path.yml:/etc/traefik/dynamic/path.yml # Montăm config-ul dinamic
       - ./traefik/certs:/etc/traefik/certs # Montăm folderul cu certificate
 
     networks:
@@ -61,8 +61,7 @@ services:
       - /app/node_modules
     labels:
       - "traefik.enable=true"
-      - "traefik.http.routers.frontend.rule=PathPrefix(`/`)"
-      - "traefik.http.routers.frontend.rule=Host(`localhost`)"
+      - "traefik.http.routers.frontend.rule=Host(`localhost`) && PathPrefix(`/`)"
       - "traefik.http.routers.frontend.entrypoints=websecure"
       - "traefik.http.services.frontend.loadbalancer.server.port=5173"
       - "traefik.http.routers.frontend.priority=10"
@@ -89,7 +88,7 @@ services:
       - devices-service
     labels:
       - "traefik.enable=true"
-      - "traefik.http.routers.gateway.rule=PathPrefix(`/auth`) || PathPrefix(`/users`) || PathPrefix(`/devices`) || PathPrefix(`/api`) || PathPrefix(`/people`)"
+      - "traefik.http.routers.gateway.rule=Host(`localhost`) && (PathPrefix(`/auth`) || PathPrefix(`/users`) || PathPrefix(`/devices`) || PathPrefix(`/api`) || PathPrefix(`/people`))"
       - "traefik.http.routers.gateway.entrypoints=websecure"
       - "traefik.http.routers.backend.tls=true"
       - "traefik.http.services.gateway.loadbalancer.server.port=8084"
@@ -115,7 +114,7 @@ services:
     networks:
       - demo_net
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8081/api/users"]
+      test: ["CMD", "curl", "-f", "https://localhost:8081/api/users"]
       interval: 10s
       timeout: 5s
       retries: 5

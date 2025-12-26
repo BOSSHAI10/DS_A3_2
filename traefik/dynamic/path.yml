@@ -9,3 +9,100 @@ tls:
       defaultCertificate:
         certFile: /etc/traefik/certs/cert.pem
         keyFile: /etc/traefik/certs/key.pem
+
+http:
+  routers:
+    # --- Frontend Router ---
+    frontend-router:
+      rule: "PathPrefix(`/`)"
+      service: frontend-service
+      entryPoints:
+        - web
+        - websecure
+      tls: {} # Activează HTTPS
+
+    # --- Microservices Routers ---
+
+    # Ruta pentru Auth Service (ex: /auth/login -> ajunge la backend ca /login)
+    auth-router:
+      rule: "PathPrefix(`/auth`)"
+      service: auth-service
+      middlewares:
+        - strip-auth # Scoate prefixul /auth
+      entryPoints:
+        - web
+        - websecure
+      tls: {}
+
+    # Ruta pentru Users Service
+    users-router:
+      rule: "PathPrefix(`/users`) || PathPrefix(`/people`)"
+      service: users-service
+      middlewares:
+        - strip-users
+      entryPoints:
+        - web
+        - websecure
+      tls: {}
+
+    # Ruta pentru Devices Service
+    devices-router:
+      rule: "PathPrefix(`/devices`)"
+      service: devices-service
+      middlewares:
+        - strip-devices
+      entryPoints:
+        - web
+        - websecure
+      tls: {}
+
+    # Ruta pentru Monitoring Service
+    monitoring-router:
+      rule: "PathPrefix(`/monitoring`)"
+      service: monitoring-service
+      middlewares:
+        - strip-monitoring
+      entryPoints:
+        - web
+        - websecure
+      tls: {}
+
+  services:
+    # Aici definim adresele interne ale containerelor
+    # ATENȚIE: 'url' trebuie să conțină numele exact al serviciului din docker-compose.yml
+
+    frontend-service:
+      loadBalancer:
+        servers:
+          - url: "https://frontend:5173" # Sau portul 80/3000, în funcție de Dockerfile-ul frontend-ului
+
+    auth-service:
+      loadBalancer:
+        servers:
+          - url: "https://auth-service:8082"
+
+    users-service:
+      loadBalancer:
+        servers:
+          - url: "https://users-service:8081"
+
+    devices-service:
+      loadBalancer:
+        servers:
+          - url: "https://devices-service:8082"
+
+    monitoring-service:
+      loadBalancer:
+        servers:
+          - url: "https://monitoring-service:8085"
+
+  middlewares:
+    # Middleware pentru a șterge prefixul din URL înainte de a-l trimite la backend
+    strip-auth:
+      stripPrefix:
+        prefixes:
+          - "/auth"
+    strip-api:
+      stripPrefix:
+        prefixes:
+          - "/api"
